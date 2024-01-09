@@ -1,4 +1,3 @@
-import TreasureChestUtility from "../lib/TreasureChestUtility";
 import { deployTestContracts } from "../test/deploy.test";
 
 async function main() {

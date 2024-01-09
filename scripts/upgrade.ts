@@ -1,5 +1,4 @@
 import { viem } from "hardhat";
-import TreasureChestUtility from "../lib/TreasureChestUtility";
 import { deployTestContracts } from "../test/deploy.test";
 import DeployContract from "./contract/DeployContract";
 import { Config } from "./config/Config";
