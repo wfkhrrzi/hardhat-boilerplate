@@ -25,9 +25,6 @@
 		"test": "npx hardhat test",
 		"compile": "npx hardhat compile",
 		"node": "npx hardhat node",
-		"generate-key": "source .env && npx hardhat run scripts/genKey.ts --network $DEPLOY_NETWORK",
-		"generate-nft": "source .env && npx hardhat run scripts/genNFT.ts --network $DEPLOY_NETWORK",
-		"mint-USDT": "source .env && npx hardhat run scripts/mintUSDT.ts --network $DEPLOY_NETWORK",
 		"upgrade": "source .env && npx hardhat run scripts/upgrade.ts --network $DEPLOY_NETWORK",
 		"verify": "source .env && npx hardhat verify --network $DEPLOY_NETWORK"
 	}
