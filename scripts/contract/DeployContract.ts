@@ -2,7 +2,7 @@ import { ethers, upgrades, network, run } from "hardhat";
 import { time } from "@nomicfoundation/hardhat-toolbox/network-helpers";
 import { getImplementationAddress } from "@openzeppelin/upgrades-core";
 import { Contract } from "ethers";
-import { Config } from "../config/Config";
+import { Config } from "../config/config";
 import { EthereumProvider, HttpNetworkConfig } from "hardhat/types";
 import { Address } from "viem";
 
@@ -19,7 +19,7 @@ export default class DeployContract {
 			contractName
 		);
 
-		const contract = await contractFactory.deploy(params)
+		const contract = await contractFactory.deploy(...params)
 
 		await contract.waitForDeployment()
 
