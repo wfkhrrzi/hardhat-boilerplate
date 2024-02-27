@@ -1,7 +1,7 @@
-import { deployTestContracts } from "../test/deploy.test";
+import { deployContracts } from "../test/deploy.test";
 
 async function main() {
-	await deployTestContracts(true);
+	await deployContracts(true);
 }
 
 // We recommend this pattern to be able to use async/await everywhere
