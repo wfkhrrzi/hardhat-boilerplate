@@ -1,7 +1,7 @@
 import { viem } from "hardhat";
 import { deployTestContracts } from "../test/deploy.test";
 import DeployContract from "./contract/DeployContract";
-import { Config } from "./config/Config";
+import { Config } from "./config/config";
 import { getContract } from "viem";
 
 async function main() {
@@ -10,7 +10,7 @@ async function main() {
 	/**
 	 * Upgrade REdacted Staking
 	 */
-	// await DeployContractObject.deployTestnet("REdactedStaking", undefined, 3)
+	// await DeployContractObject.deployToChain("REdactedStaking", undefined, 3)
 
 }
 

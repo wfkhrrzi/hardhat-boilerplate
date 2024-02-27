@@ -3,8 +3,10 @@ import { time } from "@nomicfoundation/hardhat-toolbox/network-helpers";
 import { getImplementationAddress } from "@openzeppelin/upgrades-core";
 import { Contract } from "ethers";
 import { Config } from "../config/config";
-import { EthereumProvider, HttpNetworkConfig } from "hardhat/types";
+import { ArtifactsMap, EthereumProvider, HttpNetworkConfig } from "hardhat/types";
 import { Address } from "viem";
+
+type ContractName<StringT extends string> = StringT extends keyof ArtifactsMap ? StringT : never;
 
 export default class DeployContract {
 	private config: Config;
@@ -14,19 +16,19 @@ export default class DeployContract {
 		else this.config = new Config()
 	}
 
-	static async deployNormalContract(contractName: string, params: any[]|undefined=[]) {
+	private static async deployNormalContract(contractName: string, params: any[]|undefined=[]) {
 		const contractFactory = await ethers.getContractFactory(
 			contractName
 		);
 
-		const contract = await contractFactory.deploy(...params)
+		const contract = await contractFactory.deploy(params)
 
 		await contract.waitForDeployment()
 
 		return contract
 	}
 
-	static async deployProxyContract(contractName: string, params: any[]|undefined=undefined, initializer_name = "initialize") {
+	private static async deployProxyContract(contractName: string, params: any[]|undefined=undefined, initializer_name = "initialize") {
 		const contractFactory = await ethers.getContractFactory(
 			contractName
 		);
@@ -90,15 +92,15 @@ export default class DeployContract {
 		return resp
 	}
 
-	static async deployLocal(contractName: string, params: any[]|undefined=undefined, initializer_name = "initialize") {
+	static async deployLocal<CN extends string>(contractName: ContractName<CN>, params: any[]|undefined=undefined, initializer_name = "initialize") {
 		if(await DeployContract.isUpgradeable(contractName)) 
 			return await DeployContract.deployProxyContract(contractName, params, initializer_name)
 		else 
 			return await DeployContract.deployNormalContract(contractName,params)
 	}
 
-	async deployTestnet(
-		contractName: string,
+	async deployToChain<CN extends string>(
+		contractName: ContractName<CN>,
 		params: any[] | undefined = undefined,
 		impl_version: number = 1,
 		initializer_name = "initialize",
