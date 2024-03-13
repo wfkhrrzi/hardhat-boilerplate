@@ -1,5 +1,5 @@
 import { ethers, upgrades, network, run } from "hardhat";
-import { time } from "@nomicfoundation/hardhat-toolbox/network-helpers";
+import { time } from "@nomicfoundation/hardhat-toolbox-viem/network-helpers";
 import { getImplementationAddress } from "@openzeppelin/upgrades-core";
 import { Contract } from "ethers";
 import { Config } from "../config/config";

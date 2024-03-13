@@ -1,7 +1,7 @@
 import { HardhatUserConfig } from "hardhat/config";
-import "@nomicfoundation/hardhat-toolbox";
+import "@nomicfoundation/hardhat-toolbox-viem";
 import "@openzeppelin/hardhat-upgrades";
-import "@nomicfoundation/hardhat-viem";
+import '@openzeppelin/upgrades-core'
 import * as dotenv from "dotenv";
 
 dotenv.config();

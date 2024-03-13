@@ -1,12 +1,10 @@
 {
 	"devDependencies": {
 		"@nomicfoundation/hardhat-ethers": "^3.0.5",
-		"@nomicfoundation/hardhat-toolbox": "^3.0.0",
-		"@openzeppelin/hardhat-upgrades": "^2.4.1",
-		"@openzeppelin/upgrades-core": "^1.31.3",
-		"erc721a": "^4.2.3",
-		"ethers": "^6.9.0",
-		"hardhat": "^2.19.1",
+		"@nomicfoundation/hardhat-toolbox-viem": "^2.0.0",
+		"@openzeppelin/hardhat-upgrades": "^3.0.4",
+		"ethers": "^6.11.1",
+		"hardhat": "^2.21.0",
 		"solc": "^0.8.20"
 	},
 	"dependencies": {
