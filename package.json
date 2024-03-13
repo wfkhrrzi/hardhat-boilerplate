@@ -17,6 +17,7 @@
 		"viem": "^1.20.3"
 	},
 	"scripts": {
+		"deploy": "source .env && npx hardhat run scripts/deploy.ts --network $DEPLOY_NETWORK",
 		"deploy-bscTestnet": "source .env && npx hardhat run scripts/deploy.ts --network bsc_testnet",
 		"deploy-sepolia": "source .env && npx hardhat run scripts/deploy.ts --network sepolia",
 		"clean-compile": "npx hardhat clean && npx hardhat compile",
