@@ -1,5 +1,5 @@
 import { viem } from "hardhat";
-import DeployContract from "../scripts/contract/DeployContract";
+import DeployContract from "../scripts/deployContract/DeployContract";
 import { Abi } from "viem";
 import { Config } from "../scripts/config/config";
 
