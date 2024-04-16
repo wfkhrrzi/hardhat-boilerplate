@@ -1,4 +1,4 @@
-import { deployContracts } from "../test/deploy.test";
+import { deployContracts } from "./deployContract/deployScript";
 
 async function main() {
 	await deployContracts(true);

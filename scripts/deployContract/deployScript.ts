@@ -1,7 +1,7 @@
 import { viem } from "hardhat";
-import DeployContract from "../scripts/deployContract/DeployContract";
+import DeployContract from "./DeployContract";
 import { Abi } from "viem";
-import { Config } from "../scripts/config/config";
+import { Config } from "../config/config";
 
 const { PUBLIC_KEY, BACKEND_WALLET } = process.env;
 

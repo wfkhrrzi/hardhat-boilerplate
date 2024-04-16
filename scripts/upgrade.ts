@@ -1,5 +1,5 @@
 import { viem } from "hardhat";
-import { deployContracts } from "../test/deploy.test";
+import { deployContracts } from "./deployContract/deployScript";
 import DeployContract from "./deployContract/DeployContract";
 import { Config } from "./config/config";
 import { getContract } from "viem";
