@@ -1,7 +1,11 @@
 import * as fs from "node:fs";
 import { Address } from "viem";
 import { network } from "hardhat";
-import ContractConfigJSON from "../config/bsc_testnet.config.json"
+import { ArtifactsMap } from "hardhat/types";
+
+type ContractName<StringT extends string> = StringT extends keyof ArtifactsMap
+	? StringT
+	: never;
 
 interface ConfigFile {
 	contracts: { [key: string]: Address };
@@ -112,8 +116,9 @@ export class Config {
 		return config;
 	}
 
-	static getContractAddress(contractName:keyof typeof ContractConfigJSON.contracts): Address {
-		return Config.readConfig()['contracts'][contractName]
+	static getContractAddress<CN extends string>(
+		contractName: ContractName<CN>
+	): Address {
+		return Config.readConfig()["contracts"][contractName];
 	}
-
 }

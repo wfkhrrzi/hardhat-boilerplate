@@ -12,6 +12,8 @@ async function main() {
 	 */
 	// await DeployContractObject.deployToChain("REdactedStaking", undefined, 3)
 
+	DeployContract.
+
 }
 
 // We recommend this pattern to be able to use async/await everywhere
