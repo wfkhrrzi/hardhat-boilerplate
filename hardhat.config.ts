@@ -5,7 +5,7 @@ import '@openzeppelin/upgrades-core'
 import * as dotenv from "dotenv";
 
 dotenv.config();
-const { PRIVATE_KEY, API_KEY, BSCSCAN_API_KEY, ETHERSCAN_API_KEY } = process.env;
+const { PRIVATE_KEY, BSCSCAN_API_KEY, ETHERSCAN_API_KEY, BLAST_SEPOLIA_API_KEY } = process.env;
 
 const config: HardhatUserConfig = {
 	solidity: {
@@ -49,19 +49,27 @@ const config: HardhatUserConfig = {
 		apiKey: {
 			sepolia: ETHERSCAN_API_KEY!,
 			bscTestnet: BSCSCAN_API_KEY!,
-			// blast_sepolia: "blast_sepolia",
-			// shibuya: "shibuya",
+			blast_sepolia: BLAST_SEPOLIA_API_KEY!,
+			shibuya: "shibuya",
 		},
-		// customChains: [
-		// 	{
-		// 		network: "blast_sepolia",
-		// 		chainId: 168587773,
-		// 		urls: {
-		// 			apiURL: "https://api.routescan.io/v2/network/testnet/evm/168587773/etherscan",
-		// 			browserURL: "https://testnet.blastscan.io",
-		// 		},
-		// 	},
-		// ],
+		customChains: [
+			{
+				network: "blast_sepolia",
+				chainId: 168587773,
+				urls: {
+					apiURL: `https://api-sepolia.blastscan.io/api`,
+					browserURL: "https://sepolia.blastscan.io",
+				},
+			},
+			{
+				network: "shibuya",
+				chainId: 81,
+				urls: {
+					apiURL: "https://shibuya.blockscout.com/api",
+					browserURL: "https://shibuya.blockscout.com",
+				},
+			},
+		],
 	},
 
 	mocha: {
