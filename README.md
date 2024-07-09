@@ -42,6 +42,8 @@
     ```
 
     ```ts
+    // scripts/deployContract/deployScript.ts
+
     export async function deployContracts(deployToChain = false) {
     	const ABIs: Abi[] = [];
     	const config = new Config();
