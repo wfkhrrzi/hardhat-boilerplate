@@ -21,7 +21,7 @@ export default class DeployContract {
 			contractName
 		);
 
-		const contract = await contractFactory.deploy(params)
+		const contract = await contractFactory.deploy(...params)
 
 		await contract.waitForDeployment()
 
