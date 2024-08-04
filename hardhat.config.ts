@@ -3,6 +3,7 @@ import "@nomicfoundation/hardhat-toolbox-viem";
 import "@openzeppelin/hardhat-upgrades";
 import "@openzeppelin/upgrades-core";
 import "hardhat-chai-matchers-viem";
+import "hardhat-gas-reporter";
 import * as dotenv from "dotenv";
 
 dotenv.config();
@@ -80,6 +81,12 @@ const config: HardhatUserConfig = {
 
 	mocha: {
 		timeout: 100000000,
+	},
+
+	gasReporter: {
+		enabled: process.env["REPORT_GAS"] ? true : false,
+		L1: "binance",
+		coinmarketcap: process.env["COINMARKETCAP_API_KEY"],
 	},
 };
 

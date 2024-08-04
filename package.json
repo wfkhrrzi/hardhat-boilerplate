@@ -13,6 +13,7 @@
 		"@openzeppelin/contracts-upgradeable": "^5.0.0",
 		"dotenv": "^16.3.1",
 		"hardhat-chai-matchers-viem": "^2.0.8",
+		"hardhat-gas-reporter": "^2.2.0",
 		"viem": "^2.18.8"
 	},
 	"scripts": {
