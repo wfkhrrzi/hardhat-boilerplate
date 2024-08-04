@@ -12,6 +12,7 @@
 		"@openzeppelin/contracts": "^5.0.0",
 		"@openzeppelin/contracts-upgradeable": "^5.0.0",
 		"dotenv": "^16.3.1",
+		"hardhat-chai-matchers-viem": "^2.0.8",
 		"viem": "^2.18.8"
 	},
 	"scripts": {
