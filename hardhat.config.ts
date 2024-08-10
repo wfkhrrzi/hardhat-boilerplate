@@ -50,6 +50,9 @@ const config: HardhatUserConfig = {
 			},
 			allowUnlimitedContractSize: true,
 		},
+		localhost: {
+			chainId: 31337,
+		},
 	},
 
 	etherscan: {

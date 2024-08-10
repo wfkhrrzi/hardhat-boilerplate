@@ -5,7 +5,7 @@ import list_testnet_chains from "./list-testnet-chains";
 
 export class HelperUtil {
 	static isDeployedToChain(): boolean {
-		return !["hardhat"].includes(network.name);
+		return !["hardhat","localhost"].includes(network.name);
 	}
 
 	/**
@@ -25,7 +25,7 @@ export class HelperUtil {
 	static async waitTxConfirmation(txHash: Hex) {
 		return (await viem.getPublicClient()).waitForTransactionReceipt({
 			hash: txHash,
-			confirmations: ["hardhat"].includes(network.name) ? undefined : 6,
+			confirmations: ["hardhat","localhost"].includes(network.name) ? undefined : 6,
 		});
 	}
 
