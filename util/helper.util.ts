@@ -5,7 +5,7 @@ import list_testnet_chains from "./list-testnet-chains";
 
 export class HelperUtil {
 	static isDeployedToChain(): boolean {
-		return !["hardhat","localhost"].includes(network.name);
+		return !["hardhat", "localhost"].includes(network.name);
 	}
 
 	/**
@@ -17,15 +17,17 @@ export class HelperUtil {
 			throw new Error("Cannot read chain id");
 		}
 
-		return (list_testnet_chains as number[]).includes(
-			network.config.chainId
+		return (
+			(list_testnet_chains as number[]).includes(
+				network.config.chainId
+			) && this.isDeployedToChain()
 		);
 	}
 
 	static async waitTxConfirmation(txHash: Hex) {
 		return (await viem.getPublicClient()).waitForTransactionReceipt({
 			hash: txHash,
-			confirmations: ["hardhat","localhost"].includes(network.name) ? undefined : 6,
+			confirmations: !this.isDeployedToChain() ? undefined : 6,
 		});
 	}
 
@@ -39,10 +41,15 @@ export class HelperUtil {
 	 */
 	static async expectFulfilledOrRejected(
 		txHash: Promise<Hex>,
-		expectFailure = false
+		expectFailure = false,
+		errorMessage?: string
 	): Promise<boolean> {
 		if (expectFailure) {
-			await expect(txHash).rejected;
+			if (errorMessage) {
+				await expect(txHash).rejectedWith(errorMessage);
+			} else {
+				await expect(txHash).rejected;
+			}
 			return false;
 		}
 

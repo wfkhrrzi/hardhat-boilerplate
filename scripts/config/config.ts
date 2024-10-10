@@ -1,124 +1,79 @@
 import * as fs from "node:fs";
-import { Address } from "viem";
-import { network } from "hardhat";
-import { ArtifactsMap } from "hardhat/types";
+import path from "path";
+import { ILogObj } from "tslog";
+import { CustomLogger } from "../../util/logger";
 
-type ContractName<StringT extends string> = StringT extends keyof ArtifactsMap
-	? StringT
-	: never;
-
-interface ConfigFile {
-	contracts: { [key: string]: Address };
-	[key: `v${number}`]: {
-		[key: string]: Address;
-	};
-}
-
-export class Config {
+export class Config<ConfigFileFormat> {
 	private configFilePath: string;
+	private logger: CustomLogger<ILogObj>;
 
-	constructor(configFilePath?: string) {
-		if (configFilePath == undefined) {
-			configFilePath = Config.getNetworkFilePath();
-		}
-
+	constructor(configFilePath: string) {
 		this.configFilePath = configFilePath;
-	}
-
-	private static getNetworkFilePath() {
-		const networkName = network.name;
-
-		if (networkName == "hardhat") return "";
-
-		const configFilePath = process.env[
-			`${networkName.toUpperCase()}_CONFIG_FILE_PATH`
-		] as string | undefined;
-
-		if (configFilePath == undefined) {
-			throw new Error(
-				`Config file path for network "${networkName}" is not configured in .env file!\nPlease add "${networkName.toUpperCase()}_CONFIG_FILE_PATH=<path>" in .env file`
-			);
+		this.logger = new CustomLogger({
+			name: "Config",
+			minLevel: 4,
+		});
+		if (!fs.existsSync(path.dirname(this.configFilePath))) {
+			this.logger.error("Directory of the given path does not exist");
+			process.exit(1);
 		}
-
-		return configFilePath;
 	}
 
 	// Function to read the config file
-	private static _readConfig(configFilePath: string): ConfigFile {
+	readConfig(): ConfigFileFormat | undefined {
 		try {
-			const data = fs.readFileSync(
-				`${__dirname}/${configFilePath}`,
-				"utf8"
+			const data = fs.readFileSync(`${this.configFilePath}`, "utf8");
+
+			this.logger.info(
+				`Config file [${path.basename(
+					this.configFilePath
+				)}] is successfully read`
 			);
-			return JSON.parse(data) as ConfigFile;
+
+			return JSON.parse(data) as ConfigFileFormat;
 		} catch (error) {
-			console.error(
-				`Error reading config file: ${
-					(error as unknown as Error).message
-				}`
-			);
+			if ((error as Error).message.toLowerCase().includes("enoent")) {
+				this.logger.warn(
+					`Config file [${path.basename(
+						this.configFilePath
+					)}] might not be found`
+				);
+				this.logger.info(
+					`Creating an empty [${path.basename(
+						this.configFilePath
+					)}] config file...`
+				);
 
-			console.log("\nCreating an empty config file");
-			return Config.createEmptyConfigFile(configFilePath);
+				return undefined;
+			} else {
+				this.logger.fatal(error);
+				process.exit(1);
+			}
 		}
-	}
-
-	static readConfig() {
-		return Config._readConfig(Config.getNetworkFilePath());
-	}
-
-	readConfig() {
-		return Config._readConfig(this.configFilePath);
 	}
 
 	// Function to write the config file
-	private static _writeConfig(
-		config: ConfigFile,
-		configFilePath: string
-	): void {
+	writeConfig(content: ConfigFileFormat): void {
 		try {
 			fs.writeFileSync(
-				`${__dirname}/${configFilePath}`,
-				JSON.stringify(config, null, 4),
+				`${this.configFilePath}`,
+				JSON.stringify(content, null, 4),
 				"utf8"
 			);
-			console.log("Config file updated.");
-		} catch (error) {
-			throw Error(
-				`Error writing config file: ${
-					(error as unknown as Error).message
-				}`
+
+			this.logger.info(
+				`Config file [${path.basename(
+					this.configFilePath
+				)}] is successfully updated`
 			);
+		} catch (error) {
+			this.logger.error(
+				`Error writing config file [${path.basename(
+					this.configFilePath
+				)}]`
+			);
+			this.logger.fatal(error);
+			process.exit(1);
 		}
-	}
-
-	static writeConfig(config: ConfigFile) {
-		Config._writeConfig(config, Config.getNetworkFilePath());
-	}
-
-	writeConfig(config: ConfigFile) {
-		Config._writeConfig(config, this.configFilePath);
-	}
-
-	private static createEmptyConfigFile(configFilePath: string): ConfigFile {
-		const config = {
-			contracts: {},
-		} as ConfigFile;
-
-		fs.writeFileSync(
-			`${__dirname}/${configFilePath}`,
-			JSON.stringify(config, null, 4),
-			"utf8"
-		);
-
-		console.log(`Successfully created ${configFilePath} config file.\n`);
-
-		return config;
-	}
-
-	static getContractAddress<CN extends string>(
-		contractName: ContractName<CN>
-	): Address {
-		return Config.readConfig()["contracts"][contractName];
 	}
 }

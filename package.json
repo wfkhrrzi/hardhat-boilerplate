@@ -1,30 +1,42 @@
 {
 	"devDependencies": {
-		"@nomicfoundation/hardhat-ethers": "^3.0.5",
+		"@nomicfoundation/hardhat-ethers": "^3.0.6",
 		"@nomicfoundation/hardhat-toolbox-viem": "^3.0.0",
-		"@nomicfoundation/hardhat-viem": "^2.0.0",
-		"@openzeppelin/hardhat-upgrades": "^3.0.4",
-		"ethers": "^6.11.1",
-		"hardhat": "^2.21.0",
+		"@nomicfoundation/hardhat-viem": "^2.0.3",
+		"@openzeppelin/hardhat-upgrades": "^3.2.1",
+		"@release-it/conventional-changelog": "^8.0.2",
+		"@types/mocha-each": "^2.0.4",
+		"ethers": "^6.13.2",
+		"hardhat": "^2.22.8",
+		"hardhat-chai-matchers-viem": "^2.0.8",
+		"mocha-each": "^2.0.1",
+		"release-it": "^17.8.2",
 		"solc": "^0.8.20"
 	},
 	"dependencies": {
+		"@inquirer/prompts": "^7.0.0",
 		"@openzeppelin/contracts": "^5.0.0",
 		"@openzeppelin/contracts-upgradeable": "^5.0.0",
+		"@openzeppelin/merkle-tree": "^1.0.7",
+		"@solidstate/contracts": "^0.0.60",
+		"axios": "^1.7.7",
+		"date-fns": "^4.1.0",
+		"date-fns-tz": "^3.2.0",
 		"dotenv": "^16.3.1",
-		"hardhat-chai-matchers-viem": "^2.0.8",
-		"hardhat-gas-reporter": "^2.2.0",
+		"hardhat-diamond-abi": "^3.0.1",
+		"tslog": "^4.9.3",
 		"viem": "^2.18.8"
 	},
 	"scripts": {
-		"deploy": "source .env && npx hardhat run scripts/deploy.ts --network $DEPLOY_NETWORK",
-		"deploy-bscTestnet": "source .env && npx hardhat run scripts/deploy.ts --network bsc_testnet",
-		"deploy-sepolia": "source .env && npx hardhat run scripts/deploy.ts --network sepolia",
+		"deploy-bscTestnet": "npx hardhat run scripts/execDeploy/testnet/deploy.ts --network bsc_testnet",
+		"deploy-sepolia": "npx hardhat run scripts/execDeploy/testnet/deploy.ts --network sepolia",
+		"deploy-localhost": "npx hardhat run scripts/execDeploy/testnet/deploy.ts --network localhost",
 		"clean-compile": "npx hardhat clean && npx hardhat compile",
 		"test": "npx hardhat test",
 		"compile": "npx hardhat compile",
 		"node": "npx hardhat node",
-		"upgrade": "source .env && npx hardhat run scripts/upgrade.ts --network $DEPLOY_NETWORK",
+		"upgrade-bscTestnet": "npx hardhat run scripts/execUpgrade/testnet/upgrade.ts --network bsc_testnet",
+		"upgrade-sepolia": "npx hardhat run scripts/execUpgrade/testnet/upgrade.ts --network sepolia",
 		"verify": "source .env && npx hardhat verify --network $DEPLOY_NETWORK"
 	}
 }

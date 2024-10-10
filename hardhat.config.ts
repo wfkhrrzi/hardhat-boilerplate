@@ -5,6 +5,7 @@ import "@openzeppelin/upgrades-core";
 import "hardhat-chai-matchers-viem";
 import "hardhat-gas-reporter";
 import * as dotenv from "dotenv";
+import { DiamondAndOZProxyResolver } from "./util/DiamondAndOZProxyResolver";
 
 dotenv.config();
 const {
@@ -12,6 +13,7 @@ const {
 	BSCSCAN_API_KEY,
 	ETHERSCAN_API_KEY,
 	BLAST_SEPOLIA_API_KEY,
+	MAINNET_PRIVATE_KEY,
 } = process.env;
 
 const config: HardhatUserConfig = {
@@ -25,6 +27,7 @@ const config: HardhatUserConfig = {
 			},
 			optimizer: {
 				enabled: true,
+				runs: 1000,
 			},
 		},
 	},
@@ -32,10 +35,20 @@ const config: HardhatUserConfig = {
 	defaultNetwork: "hardhat",
 
 	networks: {
+		mainnet: {
+			url: `https://eth-mainnet.g.alchemy.com/v2/j91vsmMePa-kINhlJ4f93rCoyNjC4wCB`,
+			gasPrice: 4000000000,
+			accounts: [`0x${MAINNET_PRIVATE_KEY}`],
+		},
 		sepolia: {
 			// url: `https://eth-sepolia.g.alchemy.com/v2/${API_KEY}`,
 			url: `https://rpc2.sepolia.org`,
 			accounts: [`0x${PRIVATE_KEY}`],
+		},
+		bsc_mainnet: {
+			url: "https://bsc-dataseed.binance.org/",
+			chainId: 56,
+			accounts: [`0x${MAINNET_PRIVATE_KEY}`],
 		},
 		bsc_testnet: {
 			url: "https://data-seed-prebsc-1-s1.binance.org:8545/",
@@ -45,8 +58,13 @@ const config: HardhatUserConfig = {
 		},
 		hardhat: {
 			forking: {
-				url: "https://data-seed-prebsc-1-s1.binance.org:8545/",
-				enabled: false,
+				blockNumber: 42626975,
+				url: `https://bsc-mainnet.nodereal.io/v1/${process.env["NODEREAL_API_KEY"]}`,
+				enabled:
+					process.env["ENABLE_FORKING"] != undefined &&
+					process.env["ENABLE_FORKING"].toLowerCase() == "true"
+						? true
+						: false,
 			},
 			allowUnlimitedContractSize: true,
 		},
@@ -87,9 +105,15 @@ const config: HardhatUserConfig = {
 	},
 
 	gasReporter: {
-		enabled: process.env["REPORT_GAS"] ? true : false,
+		enabled:
+			process.env["REPORT_GAS"] != undefined &&
+			process.env["REPORT_GAS"].toLowerCase() == "true"
+				? true
+				: false,
 		L1: "binance",
 		coinmarketcap: process.env["COINMARKETCAP_API_KEY"],
+		// proxyResolver: new DiamondAndOZProxyResolver(),
+		gasPrice: 5,
 	},
 };
 

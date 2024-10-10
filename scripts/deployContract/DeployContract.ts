@@ -1,98 +1,286 @@
-import { ethers, upgrades, network, run } from "hardhat";
-import { time } from "@nomicfoundation/hardhat-toolbox-viem/network-helpers";
 import { getImplementationAddress } from "@openzeppelin/upgrades-core";
 import { Contract } from "ethers";
-import { Config } from "../config/config";
+import { ethers, network, run, upgrades } from "hardhat";
 import {
 	ArtifactsMap,
 	EthereumProvider,
 	HttpNetworkConfig,
 } from "hardhat/types";
-import { Address } from "viem";
+import Path from "path";
+import { ILogObj, Logger } from "tslog";
+import { Address, Hex, zeroAddress } from "viem";
+import { HelperUtil } from "../../util/helper.util";
+import { Config } from "../config/config";
+import { DeployContractUtil } from "./DeployContractUtil";
+import { CustomLogger } from "../../util/logger";
 
 type ContractName<StringT extends string> = StringT extends keyof ArtifactsMap
 	? StringT
 	: never;
 
-export default class DeployContract {
-	private config: Config;
+export interface OZProxyConfigFileFormat {
+	contracts: { [key: string]: Address };
+	[key: `v${number}`]: {
+		[key: string]: Address;
+	};
+}
 
-	constructor(config?: Config) {
-		if (config) this.config = config;
-		else this.config = new Config();
+export default class DeployContract {
+	private config: Config<OZProxyConfigFileFormat>;
+	private logger: CustomLogger<ILogObj>;
+
+	constructor() {
+		this.config = new Config(
+			Path.resolve(
+				`deployment/${network.name}.oz-proxy.deployment.json`
+			)
+		);
+
+		this.logger = new CustomLogger({
+			minLevel: network.name == "hardhat" ? 6 : 0,
+			name: "DeployContract",
+		});
 	}
 
-	private static async deployNormalContract(
+	private async deployNormalContract(
 		contractName: string,
 		params: any[] | undefined = []
 	) {
-		const contractFactory = await ethers.getContractFactory(contractName);
+		try {
+			const contract = await DeployContractUtil.deployNormalContract(
+				contractName,
+				params
+			);
 
-		const contract = await contractFactory.deploy(...params);
-
-		await contract.waitForDeployment();
-
-		return contract;
+			return contract;
+		} catch (error) {
+			this.logger.fatal(error);
+			process.exit(1);
+		}
 	}
 
-	private static async deployProxyContract(
+	private async deployProxyContract(
 		contractName: string,
 		params: any[] | undefined = undefined,
 		initializer_name = "initialize"
 	) {
-		const contractFactory = await ethers.getContractFactory(contractName);
+		try {
+			const contractFactory = await ethers.getContractFactory(
+				contractName
+			);
 
-		const contract = await upgrades.deployProxy(contractFactory, params, {
-			initializer: initializer_name,
-		});
+			// deploy
+			const contract = await upgrades.deployProxy(
+				contractFactory,
+				params,
+				{
+					initializer: initializer_name,
+				}
+			);
 
-		await contract.waitForDeployment();
+			// wait for deployment
+			try {
+				await HelperUtil.waitTxConfirmation(
+					contract.deploymentTransaction()?.hash as Hex
+				);
+			} catch (error) {
+				await contract.waitForDeployment();
+			}
 
-		return contract;
+			return contract;
+		} catch (error) {
+			this.logger.fatal(error);
+			process.exit(1);
+		}
 	}
 
-	static async upgradeContract(
-		contractName: string,
-		config: Config,
+	async upgrade<CN extends string>(
+		contractName: ContractName<CN>,
 		params: any[] | undefined = undefined,
 		initializer_name = "initialize"
 	) {
-		const contractFactory = await ethers.getContractFactory(contractName);
+		try {
+			// throw if there's no proxy contract
+			const config = this.config.readConfig();
+			if (
+				config == undefined ||
+				config.contracts == undefined ||
+				config.contracts[contractName] == undefined
+			) {
+				throw new Error(
+					`Cannot upgrade non existent proxy contract [${contractName}]`
+				);
+			}
 
-		// set up options
-		let options:
-			| {
-					fn: string;
-					args?: unknown[] | undefined;
-			  }
-			| undefined;
+			// set up options
+			let options:
+				| {
+						fn: string;
+						args?: unknown[] | undefined;
+				  }
+				| undefined;
 
-		if (initializer_name != undefined && initializer_name != "initialize") {
-			options = {
-				fn: initializer_name,
+			if (
+				initializer_name != undefined &&
+				initializer_name != "initialize"
+			) {
+				options = {
+					fn: initializer_name,
+				};
+			}
+
+			if (params != undefined) {
+				if (options) {
+					options = { ...options, args: params };
+				} else {
+					this.logger.error("args != undefined BUT fn == undefined");
+					process.exit(1);
+				}
+			}
+
+			// upgrade contract
+			const proxyContract = await upgrades.upgradeProxy(
+				config["contracts"][contractName],
+				await ethers.getContractFactory(contractName),
+				options ? { call: options } : undefined
+			);
+
+			// wait for deployment
+			try {
+				await HelperUtil.waitTxConfirmation(
+					proxyContract.deploymentTransaction()?.hash as Hex
+				);
+			} catch (error) {
+				await proxyContract.waitForDeployment();
+			}
+
+			// save implementation contract
+			const implContractAddress = await this.saveImplementationContract(
+				contractName
+			);
+
+			// verify implementation contract
+			if (HelperUtil.isDeployedToChain()) {
+				await this.verifyContract(implContractAddress);
+			}
+
+			this.logger.success(
+				`Implementation contract [${implContractAddress}] is successfully verified`
+			);
+
+			return proxyContract;
+		} catch (error) {
+			this.logger.fatal(error);
+			process.exit(1);
+		}
+	}
+
+	async deploy<CN extends string>(
+		contractName: ContractName<CN>,
+		params: any[] | undefined = undefined,
+		initializer_name = "initialize"
+	): Promise<Contract> {
+		let config = this.config.readConfig();
+		if (config == undefined) {
+			config = {
+				contracts: {},
 			};
 		}
 
-		if (params != undefined) {
-			if (options) {
-				options = { ...options, args: params };
-			} else {
-				throw Error("args != undefined BUT fn == undefined");
+		// init contract
+		let contract: Contract;
+
+		// verify that there is no record of the contract
+		if (config.contracts[contractName] != undefined) {
+			contract = await ethers.getContractAt(
+				contractName,
+				config.contracts[contractName]
+			);
+
+			this.logger.warn(
+				`Proxy contract for [${contractName}] is already deployed at [${await contract.getAddress()}]`
+			);
+
+			return contract;
+		}
+
+		Object.keys(config)
+			.filter((key) => key != "contracts")
+			.map((key) => {
+				if (config[key as `v${number}`][contractName] != undefined) {
+					this.logger.error(
+						`Proxy contract [${contractName}] has implementation contract recorded in [${key}]. Delete all versions to redeloy the contract`
+					);
+					process.exit(1);
+				}
+			});
+
+		// deploy contract
+		if (await this.isUpgradeable(contractName))
+			contract = await this.deployProxyContract(
+				contractName,
+				params,
+				initializer_name
+			);
+		else
+			contract = (await this.deployNormalContract(
+				contractName,
+				params
+			)) as Contract;
+
+		let implContractAddress: Address = zeroAddress;
+
+		if (network.name != "hardhat") {
+			// save proxy or normal contract
+			config.contracts[contractName] =
+				(await contract.getAddress()) as Address;
+			this.config.writeConfig(config);
+
+			// save implementation contract address
+			if (await this.isUpgradeable(contractName)) {
+				implContractAddress = await this.saveImplementationContract(
+					contractName
+				);
+
+				this.logger.success(
+					`Implementation contract for [${contractName}] is successfully deployed at [${implContractAddress}]`
+				);
 			}
 		}
 
-		const implContract = await upgrades.upgradeProxy(
-			config.readConfig()["contracts"][contractName],
-			contractFactory,
-			options ? { call: options } : undefined
+		// verify contract
+		if (HelperUtil.isDeployedToChain()) {
+			if (implContractAddress != zeroAddress) {
+				// verify the implementation contract
+				this.verifyContract(implContractAddress);
+
+				this.logger.success(
+					`Implementation contract [${implContractAddress}] is successfully verified`
+				);
+			}
+
+			// verify the proxy contract
+			this.verifyContract(config.contracts[contractName] as Address);
+
+			this.logger.success(
+				`Implementation contract [${config.contracts[contractName]}] is successfully verified`
+			);
+		}
+
+		this.logger.success(
+			`${
+				(await this.isUpgradeable(contractName))
+					? "Proxy contract"
+					: "Contract"
+			} [${contractName}] is successfully deployed at [${
+				config.contracts[contractName]
+			}]`
 		);
 
-		await implContract.waitForDeployment();
-
-		return implContract;
+		return contract;
 	}
 
-	private static async isUpgradeable(contractName: string) {
+	private async isUpgradeable(contractName: string) {
 		const contractFactory = await ethers.getContractFactory(contractName);
 
 		const resp = contractFactory.interface.hasEvent("Initialized");
@@ -100,137 +288,58 @@ export default class DeployContract {
 		return resp;
 	}
 
-	static async deployLocal<CN extends string>(
-		contractName: ContractName<CN>,
-		params: any[] | undefined = undefined,
-		initializer_name = "initialize"
-	) {
-		if (await DeployContract.isUpgradeable(contractName))
-			return await DeployContract.deployProxyContract(
-				contractName,
-				params,
-				initializer_name
-			);
-		else
-			return await DeployContract.deployNormalContract(
-				contractName,
-				params
-			);
-	}
-
-	async deployToChain<CN extends string>(
-		contractName: ContractName<CN>,
-		params: any[] | undefined = undefined,
-		impl_version: number = 1,
-		initializer_name = "initialize"
-	): Promise<Contract> {
-		let config = this.config.readConfig();
-
-		// deploy/upgrade contract
-		let contract: Contract;
-
-		if (
-			(!(await DeployContract.isUpgradeable(contractName)) &&
-				config["contracts"][contractName]) ||
-			(config["contracts"][contractName] &&
-				config[`v${impl_version}`] &&
-				config[`v${impl_version}`][contractName])
-		) {
-			contract = await ethers.getContractAt(
-				contractName,
-				config["contracts"][contractName]
-			);
-			console.log(
-				`Proxy contract for ${contractName} already deployed at ${await contract.getAddress()}!`
-			);
-
-			return contract;
-		}
-
-		// upgrade contract
-		else if (config["contracts"][contractName]) {
-			if (await DeployContract.isUpgradeable(contractName))
-				contract = await DeployContract.upgradeContract(
-					contractName,
-					this.config,
-					params,
-					initializer_name
-				);
-			else
-				contract = (await DeployContract.deployNormalContract(
-					contractName,
-					params
-				)) as Contract;
-
-			config["contracts"][contractName] =
-				(await contract.getAddress()) as Address;
-		}
-
-		// deploy contract
-		else {
-			if (await DeployContract.isUpgradeable(contractName))
-				contract = await DeployContract.deployProxyContract(
-					contractName,
-					params,
-					initializer_name
-				);
-			else
-				contract = (await DeployContract.deployNormalContract(
-					contractName,
-					params
-				)) as Contract;
-
-			config["contracts"][contractName] =
-				(await contract.getAddress()) as Address;
-		}
-
-		this.config.writeConfig(config);
-
+	private async verifyContract(contractAddress: Address) {
 		try {
-			if (await DeployContract.isUpgradeable(contractName)) {
-				// get implementation contract
-				const provider = ethers.getDefaultProvider(
-					(network.config as HttpNetworkConfig).url
-				) as unknown as EthereumProvider;
-				const impl_contract_address = await getImplementationAddress(
-					provider,
-					config["contracts"][contractName]
-				);
-
-				// add implm_contract to config if not available
-				if (!config[`v${impl_version}`]) {
-					// create the first entry for the specific version if not existed yet
-					config[`v${impl_version}`] = {};
-				}
-				if (!config[`v${impl_version}`][contractName]) {
-					config[`v${impl_version}`][contractName] =
-						impl_contract_address as Address;
-				}
-
-				console.log(
-					`Implementation contract for ${contractName} deployed at ${impl_contract_address}`
-				);
-
-				this.config.writeConfig(config);
-
-				// verify the implm_contract
-				await run("verify:verify", {
-					address: impl_contract_address,
-				});
-			}
-
-			// verify the proxy contract
 			await run("verify:verify", {
-				address: await contract.getAddress(),
+				address: contractAddress,
 			});
 		} catch (error) {
-			console.log(error);
+			this.logger.fatal((error as Error).message.split("\n")[0]);
 		}
+	}
 
-		console.log(
-			`Contract ${contractName} deployed to ${await contract.getAddress()}\n`
-		);
+	private async saveImplementationContract<CN extends string>(
+		contractName: ContractName<CN>
+	): Promise<Address> {
+		try {
+			// fetch config
+			const config = this.config.readConfig()!;
 
-		return contract;
+			// get implementation contract
+			const implContractAddress = (await getImplementationAddress(
+				ethers.getDefaultProvider(
+					(network.config as HttpNetworkConfig).url
+				) as unknown as EthereumProvider,
+				config.contracts[contractName]
+			)) as Address;
+
+			// get new version for implementation contract
+			const latestVersion = Object.keys(config)
+				.filter(
+					(version) =>
+						version.startsWith("v") &&
+						config[version as `v${number}`][contractName] !=
+							undefined
+				)
+				.map((version) => Number(version.slice(1)))
+				.sort()
+				.at(-1);
+			const newVersion =
+				latestVersion == undefined ? 1 : latestVersion + 1;
+
+			// save implementation contract
+			// create a first entry for the latest version if not existed yet
+			if (!config[`v${newVersion}`]) {
+				config[`v${newVersion}`] = {};
+			}
+			config[`v${newVersion}`][contractName] = implContractAddress;
+
+			this.config.writeConfig(config);
+
+			return implContractAddress;
+		} catch (err) {
+			this.logger.fatal(err);
+			process.exit(1);
+		}
 	}
 }

@@ -12,3 +12,7 @@ node_modules
 # solidity-coverage files
 /coverage
 /coverage.json
+
+# misc
+localhost.oz-proxy.deployment.json
+localhost.diamond-proxy.deployment.json
