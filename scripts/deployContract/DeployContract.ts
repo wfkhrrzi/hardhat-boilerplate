@@ -29,10 +29,11 @@ export default class DeployContract {
 	private config: Config<OZProxyConfigFileFormat>;
 	private logger: CustomLogger<ILogObj>;
 
-	constructor() {
+	constructor(configPath?: string) {
 		this.config = new Config(
 			Path.resolve(
-				`deployment/${network.name}.oz-proxy.deployment.json`
+				configPath ||
+					`deployment/${network.name}.oz-proxy.deployment.json`
 			)
 		);
 
@@ -161,12 +162,18 @@ export default class DeployContract {
 
 			// verify implementation contract
 			if (HelperUtil.isDeployedToChain()) {
-				await this.verifyContract(implContractAddress);
-			}
+				const resp = this.verifyContract(implContractAddress);
 
-			this.logger.success(
-				`Implementation contract [${implContractAddress}] is successfully verified`
-			);
+				if (await resp) {
+					this.logger.success(
+						`Implementation contract [${implContractAddress}] is successfully verified`
+					);
+				} else {
+					this.logger.error(
+						`Implementation contract [${implContractAddress}] failed`
+					);
+				}
+			}
 
 			return proxyContract;
 		} catch (error) {
@@ -252,19 +259,33 @@ export default class DeployContract {
 		if (HelperUtil.isDeployedToChain()) {
 			if (implContractAddress != zeroAddress) {
 				// verify the implementation contract
-				this.verifyContract(implContractAddress);
+				const resp = this.verifyContract(implContractAddress);
 
-				this.logger.success(
-					`Implementation contract [${implContractAddress}] is successfully verified`
-				);
+				if (await resp) {
+					this.logger.success(
+						`Implementation contract [${implContractAddress}] is successfully verified`
+					);
+				} else {
+					this.logger.error(
+						`Implementation contract [${implContractAddress}] failed`
+					);
+				}
 			}
 
 			// verify the proxy contract
-			this.verifyContract(config.contracts[contractName] as Address);
-
-			this.logger.success(
-				`Implementation contract [${config.contracts[contractName]}] is successfully verified`
+			const resp = this.verifyContract(
+				config.contracts[contractName] as Address
 			);
+
+			if (await resp) {
+				this.logger.success(
+					`Implementation contract [${config.contracts[contractName]}] is successfully verified`
+				);
+			} else {
+				this.logger.error(
+					`Implementation contract [${config.contracts[contractName]}] failed`
+				);
+			}
 		}
 
 		this.logger.success(
@@ -288,13 +309,17 @@ export default class DeployContract {
 		return resp;
 	}
 
-	private async verifyContract(contractAddress: Address) {
+	private async verifyContract(contractAddress: Address): Promise<boolean> {
 		try {
 			await run("verify:verify", {
 				address: contractAddress,
 			});
+
+			return true;
 		} catch (error) {
-			this.logger.fatal((error as Error).message.split("\n")[0]);
+			this.logger.fatal((error as Error).message.split("\n"));
+
+			return false;
 		}
 	}
 

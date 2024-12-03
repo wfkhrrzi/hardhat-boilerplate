@@ -14,5 +14,7 @@ node_modules
 /coverage.json
 
 # misc
-localhost.oz-proxy.deployment.json
-localhost.diamond-proxy.deployment.json
+localhost.*oz-proxy.deployment.json
+localhost.*diamond-proxy.deployment.json
+testnet-data
+mainnet-data

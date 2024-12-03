@@ -1,5 +1,5 @@
 import { GetContractReturnType } from "@nomicfoundation/hardhat-viem/types";
-import { Contract, ContractFactory } from "ethers";
+import { Contract } from "ethers";
 import { DataHexString } from "ethers/lib.commonjs/utils/data";
 import { ethers, network, run, viem } from "hardhat";
 import { ArtifactsMap } from "hardhat/types";
@@ -7,6 +7,7 @@ import path from "path";
 import { ILogObj } from "tslog";
 import {
 	Address,
+	ContractFunctionArgs,
 	getContract,
 	Hex,
 	toFunctionSelector,
@@ -49,10 +50,11 @@ export class DeployDiamond<
 	private config: Config<ConfigFileFormat>;
 	private logger: CustomLogger<ILogObj>;
 
-	constructor() {
+	constructor(configPath?: string) {
 		this.config = new Config(
 			path.resolve(
-				`deployment/${network.name}.diamond-proxy.deployment.json`
+				configPath ||
+					`deployment/${network.name}.diamond-proxy.deployment.json`
 			)
 		);
 		this.logger = new CustomLogger({
@@ -164,7 +166,7 @@ export class DeployDiamond<
 		lstCut: {
 			facetName: ContractName<FCN>;
 			facetAddress?: Address;
-			selectors: Hex[];
+			selectors?: Hex[];
 			action: FacetCutAction;
 		}[],
 		diamondContractAddress?: Address
@@ -188,10 +190,16 @@ export class DeployDiamond<
 			);
 		}
 
-		// ensure cut selectors are not empty
-		if (lstCut.filter((cut) => cut.selectors.length == 0).length > 0) {
+		// ensure cut selectors are not empty for REPLACE/REMOVE actions
+		if (
+			lstCut.filter(
+				(cut) =>
+					(cut.selectors == undefined || cut.selectors.length == 0) &&
+					cut.action != FacetCutAction.ADD
+			).length > 0
+		) {
 			this.logErrorAndExit(
-				"Must have at least a selector to upgrade within facets"
+				"Must have at least a selector to replace/remove within facets"
 			);
 		}
 
@@ -284,7 +292,7 @@ export class DeployDiamond<
 					);
 				}
 
-				// ensure zero target address for replace and add cuts
+				// ensure zero target address for remove cuts
 				if (
 					cut.action == FacetCutAction.REMOVE &&
 					cut.facetAddress &&
@@ -306,6 +314,18 @@ export class DeployDiamond<
 		// deploy facets and record cuts
 		for (let i = 0; i < lstCut.length; i++) {
 			const cut = lstCut[i];
+
+			// skip for REMOVE action, else proceed for ADD/REPLACE actions
+			if (cut.action && cut.action == FacetCutAction.REMOVE) {
+				cutsParam.push({
+					// params for remove cuts
+					action: cut.action,
+					selectors: cut.selectors!,
+					target: zeroAddress,
+				});
+
+				continue;
+			}
 
 			try {
 				// deploy or fetch existing facet
@@ -365,8 +385,7 @@ export class DeployDiamond<
 			}
 		}
 
-		// save diamond cuts
-
+		// save diamond cuts to config
 		if (network.name != "hardhat" && config) {
 			config[diamondContractName] = {
 				...config[diamondContractName],
@@ -394,16 +413,26 @@ export class DeployDiamond<
 			this.config.writeConfig(config);
 		}
 
-		// upgrade diamond
+		// exec diamond cut
 		try {
+			const diamondCutParam: ContractFunctionArgs<
+				typeof DiamondWritableAbi,
+				"nonpayable",
+				"diamondCut"
+			> = [
+				cutsParam,
+				initializer ? initializer.target : zeroAddress,
+				initializer ? (initializer.functionData as Hex) : ("" as Hex),
+			];
+
+			// simulate
+			if (HelperUtil.isDeployedToChain()) {
+				await diamondContract.simulate.diamondCut(diamondCutParam);
+			}
+
+			// write
 			await HelperUtil.waitTxConfirmation(
-				await diamondContract.write.diamondCut([
-					cutsParam,
-					initializer ? initializer.target : zeroAddress,
-					initializer
-						? (initializer.functionData as Hex)
-						: ("" as Hex),
-				])
+				await diamondContract.write.diamondCut(diamondCutParam)
 			);
 
 			this.logger.success(
