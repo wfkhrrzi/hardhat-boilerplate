@@ -1,13 +1,13 @@
 {
 	"devDependencies": {
-		"@nomicfoundation/hardhat-ethers": "^3.0.6",
+		"@nomicfoundation/hardhat-ethers": "^3.0.8",
 		"@nomicfoundation/hardhat-toolbox-viem": "^3.0.0",
-		"@nomicfoundation/hardhat-viem": "^2.0.3",
-		"@openzeppelin/hardhat-upgrades": "^3.2.1",
+		"@nomicfoundation/hardhat-viem": "^2.0.6",
+		"@openzeppelin/hardhat-upgrades": "^3.9.0",
 		"@release-it/conventional-changelog": "^8.0.2",
 		"@types/mocha-each": "^2.0.4",
-		"ethers": "^6.13.2",
-		"hardhat": "^2.22.8",
+		"ethers": "^6.13.6",
+		"hardhat": "^2.23.0",
 		"hardhat-chai-matchers-viem": "^2.0.8",
 		"mocha-each": "^2.0.1",
 		"release-it": "^17.8.2",
@@ -15,9 +15,9 @@
 	},
 	"dependencies": {
 		"@inquirer/prompts": "^7.0.0",
-		"@openzeppelin/contracts": "^5.0.0",
-		"@openzeppelin/contracts-upgradeable": "^5.0.0",
-		"@openzeppelin/merkle-tree": "^1.0.7",
+		"@openzeppelin/contracts": "^5.3.0",
+		"@openzeppelin/contracts-upgradeable": "^5.3.0",
+		"@openzeppelin/merkle-tree": "^1.0.8",
 		"@solidstate/contracts": "^0.0.60",
 		"axios": "^1.7.7",
 		"date-fns": "^4.1.0",
@@ -25,7 +25,7 @@
 		"dotenv": "^16.3.1",
 		"hardhat-diamond-abi": "^3.0.1",
 		"tslog": "^4.9.3",
-		"viem": "^2.18.8"
+		"viem": "^2.27.0"
 	},
 	"scripts": {
 		"deploy-bscTestnet": "npx hardhat run scripts/execDeploy/testnet/deploy.ts --network bsc_testnet",
