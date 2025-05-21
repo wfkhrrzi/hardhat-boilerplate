@@ -40,7 +40,9 @@
 		"upgrade-bscTestnet": "npx hardhat run scripts/execUpgrade/testnet/upgrade.ts --network bsc_testnet",
 		"upgrade-sepolia": "npx hardhat run scripts/execUpgrade/testnet/upgrade.ts --network sepolia",
 		"verify": "source .env && npx hardhat verify --network $DEPLOY_NETWORK",
-		"install:hardhat-gas-reporter": "npm i --no-save hardhat-gas-reporter"
+		"install:hardhat-gas-reporter": "npm i --no-save hardhat-gas-reporter",
+		"test-linux": "npm run compile && LOG_LEVEL=error npx hardhat test --no-compile",
+		"test-linux:no-compile": "LOG_LEVEL=error npx hardhat test --no-compile"
 	},
 	"packageManager": "yarn@4.7.0+sha512.5a0afa1d4c1d844b3447ee3319633797bcd6385d9a44be07993ae52ff4facabccafb4af5dcd1c2f9a94ac113e5e9ff56f6130431905884414229e284e37bb7c9"
 }
