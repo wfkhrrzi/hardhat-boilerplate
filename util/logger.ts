@@ -1,4 +1,7 @@
+import chalk from "chalk";
 import { ISettingsParam, BaseLogger, ILogObjMeta } from "tslog";
+
+export const comment = (s: any) => chalk.hex("#6A9955")(s);
 
 export class CustomLogger<LogObj> extends BaseLogger<LogObj> {
 	constructor(settings?: ISettingsParam<LogObj>, logObj?: LogObj) {
@@ -38,7 +41,7 @@ export class CustomLogger<LogObj> extends BaseLogger<LogObj> {
 	 * @return LogObject with meta property, when log level is >= minLevel
 	 */
 	public success(...args: unknown[]): (LogObj & ILogObjMeta) | undefined {
-		return super.log(7, "SUCCESS", ...args);
+		return super.log(4, "SUCCESS", ...args);
 	}
 
 	debug(...args: unknown[]) {
@@ -50,14 +53,14 @@ export class CustomLogger<LogObj> extends BaseLogger<LogObj> {
 	}
 
 	warn(...args: unknown[]) {
-		return super.log(4, "WARN", ...args);
+		return super.log(5, "WARN", ...args);
 	}
 
 	error(...args: unknown[]) {
-		return super.log(5, "ERROR", ...args);
+		return super.log(6, "ERROR", ...args);
 	}
 
 	fatal(...args: unknown[]) {
-		return super.log(6, "FATAL", ...args);
+		return super.log(7, "FATAL", ...args);
 	}
 }

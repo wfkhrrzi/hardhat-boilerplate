@@ -11,7 +11,7 @@ export class Config<ConfigFileFormat> {
 		this.configFilePath = configFilePath;
 		this.logger = new CustomLogger({
 			name: "Config",
-			minLevel: 4,
+			minLevel: 6,
 		});
 		if (!fs.existsSync(path.dirname(this.configFilePath))) {
 			this.logger.error("Directory of the given path does not exist");

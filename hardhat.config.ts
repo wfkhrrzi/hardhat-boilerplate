@@ -27,7 +27,7 @@ const config: HardhatUserConfig = {
 			},
 			optimizer: {
 				enabled: true,
-				runs: 1000,
+				runs: 200,
 			},
 		},
 	},
@@ -67,6 +67,9 @@ const config: HardhatUserConfig = {
 						: false,
 			},
 			allowUnlimitedContractSize: true,
+			accounts: {
+				count: 50,
+			},
 		},
 		localhost: {
 			chainId: 31337,
@@ -110,7 +113,7 @@ const config: HardhatUserConfig = {
 			process.env["REPORT_GAS"].toLowerCase() == "true"
 				? true
 				: false,
-		L1: "binance",
+		L1: "ethereum",
 		coinmarketcap: process.env["COINMARKETCAP_API_KEY"],
 		// proxyResolver: new DiamondAndOZProxyResolver(),
 		gasPrice: 5,

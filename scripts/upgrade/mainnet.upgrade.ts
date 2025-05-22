@@ -1,7 +1,7 @@
-import ConfirmDeployOrUpgrade from "../../../util/confirmDeployOrUpgrade.util";
-import DeployContract from "../../deployContract/DeployContract";
+import ConfirmDeployOrUpgrade from "../../util/confirmDeployOrUpgrade.util";
+import DeployContract from "../../util/deployContract/DeployContract";
 
-async function main() {
+async function runMainnetUpgrade() {
 	// confirm upgrade
 	await ConfirmDeployOrUpgrade("Mainnet OZ Upgrade");
 
@@ -11,12 +11,12 @@ async function main() {
 	/**
 	 * Upgrade contract
 	 */
-	await OZDeployer.upgrade("Lock");
+	await OZDeployer.upgrade("AiETH");
 }
 
 // We recommend this pattern to be able to use async/await everywhere
 // and properly handle errors.
-main().catch((error) => {
+runMainnetUpgrade().catch((error) => {
 	console.error(error);
 	process.exitCode = 1;
 });

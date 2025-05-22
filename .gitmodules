@@ -1,0 +1,4 @@
+[submodule "lido-core-contracts"]
+	path = lido-core-contracts
+	url = https://github.com/sw-aiETH-LSD/lido-core-contracts.git
+	branch = chore/aiETH-testing
