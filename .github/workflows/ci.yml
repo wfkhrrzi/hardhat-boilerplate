@@ -21,7 +21,7 @@ jobs:
 
             - name: Cache node modules
               id: cache-nodemodules
-              uses: actions/cache@v2
+              uses: actions/cache@v4
               env:
                   cache-name: cache-node-modules
               with:
@@ -40,5 +40,12 @@ jobs:
             - name: Setup .env config
               run: cp .env.example .env
 
-            - name: Run Tests
-              run: npx hardhat test
+            - name: Run LPBonding test
+              run: npm run test:LPBonding
+              env:
+                  FORCE_COLOR: 2
+
+            - name: Run RewardVesting test
+              run: npm run test:RewardVesting
+              env:
+                  FORCE_COLOR: 2
