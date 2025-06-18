@@ -90,7 +90,7 @@ export default class DeployContract {
 
 			return contract;
 		} catch (error) {
-			this.logger.fatal(error);
+			this.logger.fatal((error as Error).message);
 			process.exit(1);
 		}
 	}
