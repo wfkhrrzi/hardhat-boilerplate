@@ -6,6 +6,7 @@ import { ArtifactsMap } from "hardhat/types";
 import path from "path";
 import { ILogObj } from "tslog";
 import {
+	Abi,
 	Address,
 	ContractFunctionArgs,
 	getContract,
@@ -19,6 +20,7 @@ import { Config } from "../config/config";
 import { DeployContractUtil } from "./DeployContractUtil";
 import { formatInTimeZone } from "date-fns-tz";
 import DiamondWritableAbi from "../../util/abi/DiamondWritable.abi";
+import chalk from "chalk";
 
 export enum FacetCutAction {
 	ADD,
@@ -314,6 +316,7 @@ export class DeployDiamond<
 		// deploy facets and record cuts
 		for (let i = 0; i < lstCut.length; i++) {
 			const cut = lstCut[i];
+			const lstSelectors: { functionName: string; selector: Hex }[] = [];
 
 			// skip for REMOVE action, else proceed for ADD/REPLACE actions
 			if (cut.action && cut.action == FacetCutAction.REMOVE) {
@@ -342,6 +345,11 @@ export class DeployDiamond<
 								cut.facetName
 						  );
 				} catch (error) {
+					this.logger.error(
+						chalk.red("error deploying facet contract...")
+					);
+					this.logger.fatal(error);
+
 					// get contract for foreign facet
 					facet = cut.facetAddress
 						? await ethers.getContractAt([], cut.facetAddress)
@@ -378,9 +386,65 @@ export class DeployDiamond<
 						}] is successfully deployed at [${await facet.getAddress()}]`
 					);
 				}
+
+				facet.interface.fragments
+					.filter((fragment) => fragment.type === "function")
+					.forEach((fragment) => {
+						lstSelectors.push({
+							// @ts-ignore
+							functionName: fragment.name,
+							selector: toFunctionSelector(
+								fragment.format("minimal")
+							),
+						});
+					});
 			} catch (err) {
 				this.logger.error(
 					`Facet contract [${cut.facetName}] failed to deploy. Skipping to next cut...`
+				);
+			}
+
+			// filter duplicate selectors
+			const duplicates = cutsParam
+				.reduce<Hex[]>((out, data) => {
+					return [...out, ...data.selectors];
+				}, [])
+				.reduce<{ checked: Hex[]; duplicates: Hex[] }>(
+					({ checked, duplicates }, data) => {
+						// push duplicate
+						if (checked.includes(data)) {
+							duplicates.push(data);
+						}
+
+						// assign as data checked
+						return { checked: [...checked, data], duplicates };
+					},
+					{ checked: [], duplicates: [] }
+				).duplicates;
+
+			if (duplicates.length > 0) {
+				duplicates.map((data) => {
+					const selector = lstSelectors.find(
+						({ selector }) =>
+							selector.toLowerCase() == data.toLowerCase()
+					);
+					// log duplicates
+					this.logger.error(
+						chalk.red(
+							`selector "${
+								selector ? selector.functionName : ""
+							}" (${data}) has duplicates`
+						)
+					);
+				});
+
+				// stop script
+				this.logErrorAndExit(
+					chalk.red(
+						chalk.bold(
+							"contracts to be deployed have duplicate selectors that must be resolved!"
+						)
+					)
 				);
 			}
 		}
