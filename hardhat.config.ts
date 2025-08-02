@@ -19,6 +19,8 @@ const {
 	BLAST_SEPOLIA_API_KEY,
 	MAINNET_PRIVATE_KEY,
 	DISABLE_VERIFICATION,
+	VERIFY_SOURCIFY,
+	SOURCIFY_SERVER_URL,
 } = process.env;
 
 const config: HardhatUserConfig = {
@@ -129,6 +131,15 @@ const config: HardhatUserConfig = {
 
 	mocha: {
 		timeout: 100000000,
+	},
+
+	sourcify: {
+		enabled:
+			VERIFY_SOURCIFY != undefined &&
+			VERIFY_SOURCIFY.toLowerCase() == "true"
+				? true
+				: false,
+		apiUrl: SOURCIFY_SERVER_URL || "invalid",
 	},
 
 	gasReporter: {
