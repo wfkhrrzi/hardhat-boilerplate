@@ -94,13 +94,7 @@ const config: HardhatUserConfig = {
 			DISABLE_VERIFICATION != undefined &&
 			DISABLE_VERIFICATION.toLowerCase() == "true"
 				? undefined
-				: {
-						sepolia: ETHERSCAN_API_KEY || "",
-						bscTestnet: BSCSCAN_API_KEY || "",
-						blast_sepolia: BLAST_SEPOLIA_API_KEY || "",
-						shibuya: "shibuya",
-						hoodi: ETHERSCAN_API_KEY || "",
-				  },
+				: ETHERSCAN_API_KEY,
 		customChains: [
 			{
 				network: "blast_sepolia",
