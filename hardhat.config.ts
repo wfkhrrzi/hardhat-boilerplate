@@ -6,6 +6,16 @@ import "hardhat-chai-matchers-viem";
 import "hardhat-gas-reporter";
 import * as dotenv from "dotenv";
 import { DiamondAndOZProxyResolver } from "./util/DiamondAndOZProxyResolver";
+import "hardhat-diamond-abi";
+import "@typechain/hardhat";
+import "@nomicfoundation/hardhat-ethers";
+import { parseEther } from "viem";
+import "hardhat-dependency-compiler";
+import "hardhat-contract-sizer";
+// import '@nomicfoundation/hardhat-chai-matchers'
+
+import "./scripts/task/node";
+import chalk from "chalk";
 
 export const ZERO_PK =
 	"0x0000000000000000000000000000000000000000000000000000000000000000";
@@ -22,6 +32,13 @@ const {
 	VERIFY_SOURCIFY,
 	SOURCIFY_SERVER_URL,
 } = process.env;
+
+type DiamondAbiInfo = {
+	name: string;
+	type: string;
+	inputsLength: number;
+};
+const diamondAbiDuplicated: DiamondAbiInfo[] = [];
 
 const config: HardhatUserConfig = {
 	solidity: {
@@ -146,6 +163,55 @@ const config: HardhatUserConfig = {
 		coinmarketcap: process.env["COINMARKETCAP_API_KEY"],
 		// proxyResolver: new DiamondAndOZProxyResolver(),
 		gasPrice: 5,
+	},
+
+	diamondAbi: {
+		name: "ARKSystem",
+		include: [
+			"LPBonding__Facet",
+			"Staking__Facet",
+			"GlobalConfig__Facet",
+			"Views__Facet",
+		],
+		strict: false,
+		filter(abiElement, index, abi, fullyQualifiedName) {
+			const abiinfo: DiamondAbiInfo = {
+				name: abiElement.name,
+				type: abiElement.type,
+				inputsLength: abiElement.inputs.length,
+			};
+
+			if (
+				// if abi is not yet included, include it, otherwise skip
+				diamondAbiDuplicated.find(
+					({ name, type, inputsLength }) =>
+						abiElement.name == name &&
+						abiElement.type == type &&
+						abiElement.inputs.length == inputsLength
+				) == undefined
+			) {
+				// record abi
+				diamondAbiDuplicated.push(abiinfo);
+
+				console.log(
+					`${chalk.yellow("HardhatDiamondAbi")}: Added ${chalk.green(
+						JSON.stringify(abiinfo)
+					)} into abi`
+				);
+
+				// include abi
+				return true;
+			}
+
+			console.log(
+				`${chalk.yellow("HardhatDiamondAbi")}: Abi ${chalk.red(
+					JSON.stringify(abiinfo)
+				)} is ${chalk.red("skipped")}`
+			);
+
+			// exclude ABI
+			return false;
+		},
 	},
 };
 
