@@ -164,12 +164,9 @@ const config: HardhatUserConfig = {
 	},
 
 	diamondAbi: {
-		name: "ARKSystem",
+		name: "ARKSystem", // define your abi name here
 		include: [
-			"LPBonding__Facet",
-			"Staking__Facet",
-			"GlobalConfig__Facet",
-			"Views__Facet",
+			// define facets name to include in the abi
 		],
 		strict: false,
 		filter(abiElement, index, abi, fullyQualifiedName) {
